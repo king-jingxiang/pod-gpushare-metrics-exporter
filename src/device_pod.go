@@ -54,11 +54,14 @@ func createDevicePodMap(devicePods podresourcesapi.ListPodResourcesResponse) map
 // todo add createContainerPodMap
 // todo 最终目的 add createProcessPodMap
 type processPodInfo struct {
+	id            int
+	uuid          string
 	name          string
 	namespace     string
 	container     string
+	processName   string
 	processPid    uint
-	processType   uint
+	processType   string
 	processMemory uint64
 }
 
@@ -71,24 +74,26 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 			for _, device := range container.GetDevices() {
 				if device.GetResourceName() == nvidiaResourceName {
 					for _, uuid := range device.GetDeviceIds() {
-						glog.V(4).Infof("pod name [%s] device [%s]", pod.Name, uuid)
-						d, _ := nvml.NewDeviceLite(getGPUIdByUUID(uuid))
+						id := getGPUIdByUUID(uuid)
+						d, _ := nvml.NewDeviceLite(id)
 						if d.UUID == uuid {
 							infos, _ := d.GetAllRunningProcesses()
 							for _, v := range infos {
-								if checkProcessParent(container.Name, v.PID) {
+								if checkProcessParent(fmt.Sprintf("k8s_%s_%s_%s", container.Name, pod.Name, pod.Namespace), v.PID) {
 									podInfo := processPodInfo{
+										id:            int(id),
+										uuid:          uuid,
 										name:          pod.GetName(),
 										namespace:     pod.GetNamespace(),
 										container:     container.GetName(),
+										processName:   v.Name,
 										processPid:    v.PID,
-										processType:   uint(v.Type),
+										processType:   v.Type.String(),
 										processMemory: v.MemoryUsed,
 									}
-									processToPodMap[fmt.Sprintf("%s-%s", uuid, v.PID)] = podInfo
+									processToPodMap[fmt.Sprintf("%s-%s-%s", id, uuid, v.PID)] = podInfo
 								}
 							}
-
 						}
 					}
 				}
@@ -100,22 +105,25 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 
 // 通过检查进程container process是否是gpuprocess的父进程判断是否是容器内进程
 func checkProcessParent(containerName string, gPid uint) bool {
-	cPid := getContainerPid(containerName)
-	gProcess, _ := ps.FindProcess(int(gPid))
+	cPid := grepContainerPid(containerName)
+	gProcess, err := ps.FindProcess(int(gPid))
+	if err != nil {
+		glog.V(4).Infof("find process error %v", err)
+	}
 	for {
 		pprocess, err := ps.FindProcess(gProcess.PPid())
 		if err != nil {
-			glog.Errorf("find parent process filed: %s", err)
+			glog.Errorf("find parent process filed: %v", err)
 			return false
 		}
 		if pprocess.Pid() < 1000 {
-			glog.Errorf("gpu process [%s] not found docker container parent process ", gPid)
+			glog.Errorf("gpu process [%v] not found docker container parent process ", gPid)
 			return false
 		} else if pprocess.Pid() == cPid {
-			glog.V(4).Infof("gpu process [%s] found docker container parent process [%s] ", gPid, cPid)
-
+			glog.V(4).Infof("gpu process [%v] found docker container parent process [%v] ", gPid, cPid)
 			return true
 		}
+		gProcess = pprocess
 	}
 }
 
@@ -146,12 +154,9 @@ func getProcessPodInfo(socket string) (map[string]processPodInfo, error) {
 		return nil, fmt.Errorf("failed to get devices Pod information: %v", err)
 	}
 	return createProcessPodMap(*devicePods), nil
-
 }
 
 func addPodInfoToMetrics(dir string, srcFile string, destFile string, deviceToPodMap map[string]devicePodInfo) error {
-	glog.V(6).Infof("addPodInfoToMetrics")
-
 	readFI, err := os.Open(srcFile)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %v", srcFile, err)
@@ -197,49 +202,31 @@ func addPodInfoToMetrics(dir string, srcFile string, destFile string, deviceToPo
 }
 
 // todo 输出到process文件
-func addProcessInfoToMetrics(dir string, srcFile string, destFile string, processToPodMap map[string]processPodInfo) error {
-	glog.V(6).Infof("addProcessInfoToMetrics")
-	readFI, err := os.Open(srcFile)
-	if err != nil {
-		return fmt.Errorf("failed to open %s: %v", srcFile, err)
-	}
-	defer readFI.Close()
-	reader := bufio.NewReader(readFI)
+func addProcessInfoToMetrics(dir string, destFile string, processToPodMap map[string]processPodInfo) error {
 
 	tmpPrefix := "process"
 	tmpF, err := ioutil.TempFile(dir, tmpPrefix)
 	if err != nil {
 		return fmt.Errorf("error creating temp file: %v", err)
 	}
-
 	tmpFname := tmpF.Name()
 	defer func() {
 		tmpF.Close()
 		os.Remove(tmpFname)
 	}()
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF && len(line) == 0 {
-				return writeDestFile(tmpFname, destFile)
-			}
-			return fmt.Errorf("error reading %s: %v", srcFile, err)
-		}
-
-		// todo 这里processToPodMap的key值有问题
-		// Skip comments and add pod info
-		if string(line[0]) != "#" {
-			uuid := strings.Split(strings.Split(line, ",")[1], "\"")[1]
-			if pod, exists := processToPodMap[uuid]; exists {
-				splitLine := strings.Split(line, "}")
-				line = fmt.Sprintf("%s,pod_name=\"%s\",pod_namespace=\"%s\",container_name=\"%s\",process_pid=\"%s\"}%s", splitLine[0], pod.name, pod.namespace, pod.container, pod.processPid, splitLine[1])
-			}
-		}
-
+	_, err = tmpF.WriteString("# TYPE dcgm_process_mem_used gauge\n")
+	if err != nil {
+		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
+	}
+	//# TYPE dcgm_process_mem_used gauge
+	//dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="4000",process_type="computer"} 1024
+	for _, pod := range processToPodMap {
+		line := fmt.Sprintf("dcgm_process_mem_used{gpu=\"%v\",uuid=\"%s\",pod_name=\"%s\",pod_namespace=\"%s\",container_name=\"%s\",process_name=\"%s\",process_pid=\"%v\",process_type=\"%s\"}%v\n",
+			pod.id, pod.uuid, pod.name, pod.namespace, pod.container, pod.processName, pod.processPid, pod.processType, pod.processMemory)
 		_, err = tmpF.WriteString(line)
 		if err != nil {
 			return fmt.Errorf("error writing to %s: %v", tmpFname, err)
 		}
 	}
+	return writeDestFile(tmpFname, destFile)
 }

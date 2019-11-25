@@ -50,7 +50,7 @@ func watchAndWriteGPUmetrics() {
 					glog.Error(err)
 					return
 				}
-				err = addProcessInfoToMetrics(gpuPodMetricsPath, gpuMetrics, gpuProcessMetrics, processMap)
+				err = addProcessInfoToMetrics(gpuPodMetricsPath, gpuProcessMetrics, processMap)
 				if err != nil {
 					glog.Error(err)
 					return
