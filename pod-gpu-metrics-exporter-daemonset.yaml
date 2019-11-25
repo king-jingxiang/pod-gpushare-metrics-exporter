@@ -11,7 +11,8 @@ spec:
       name: pod-gpu-metrics-exporter
     spec:
       containers:
-      - image: nvidia/pod-gpu-metrics-exporter:v1.0.0-alpha
+#      - image: nvidia/podpod-gpu-metrics-exporter:v1.0.0-alpha
+      - image: pcl/podpod-gpu-metrics-exporter:v1.0.0-alpha
         name: pod-nvidia-gpu-metrics-exporter
         ports:
         - name: gpu-metrics
@@ -27,6 +28,8 @@ spec:
         - name: device-metrics
           readOnly: true
           mountPath: /run/prometheus
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
       - image: nvidia/dcgm-exporter:1.4.6
         name: nvidia-dcgm-exporter
         securityContext:
@@ -40,6 +43,29 @@ spec:
       - name: pod-gpu-resources
         hostPath:
           path: /var/lib/kubelet/pod-resources
+      - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
       - name: device-metrics
         emptyDir:
           medium: Memory
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: pod-gpu-metrics-svc
+  annotations:
+    prometheus.io/port: "9400"
+    prometheus.io/path: "/gpu/metrics"
+    prometheus.io/scrape: "true"
+  name: pod-gpu-metrics-svc
+  namespace: kube-system
+spec:
+  type: NodePort
+  ports:
+    - port: 9400
+      targetPort: 9400
+      nodePort: 30400
+  selector:
+    app: pod-gpu-metrics-exporter

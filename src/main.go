@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"log"
 	"syscall"
 
 	"github.com/golang/glog"
@@ -14,6 +16,15 @@ const port = ":9400"
 func main() {
 	defer glog.Flush()
 	flag.Parse()
+	log.Println("Loading NVML")
+	if err := nvml.Init(); err != nil {
+		log.Printf("Failed to initialize NVML: %s.", err)
+		log.Printf("If this is a GPU node, did you set the docker default runtime to `nvidia`?")
+		log.Printf("You can check the prerequisites at: https://github.com/NVIDIA/k8s-device-plugin#prerequisites")
+		log.Printf("You can learn how to set the runtime at: https://github.com/NVIDIA/k8s-device-plugin#quick-start")
+
+		select {}
+	}
 
 	glog.Info("Starting OS watcher.")
 	sigs := sigWatcher(syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

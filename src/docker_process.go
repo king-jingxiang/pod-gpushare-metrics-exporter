@@ -3,23 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
+const dockerSock = "unix:///var/run/docker.sock"
+
 func main() {
-	cli, err := client.NewClientWithOpts(client.WithHost("unix:///var/run/docker.sock"))
-	if err != nil {
-		panic(err)
-	}
+	fmt.Println(getContainerPid("cuda-100"))
+}
 
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
-	if err != nil {
-		panic(err)
-	}
 
-	for _, container := range containers {
-		fmt.Printf("%s %s\n", container.ID[:10], container.Image)
+// errorCode: 0: not running -1: unknown error
+func getContainerPid(containerName string) int {
+	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock))
+	if err == nil {
+		container, err := cli.ContainerInspect(context.Background(), containerName)
+		if err == nil {
+			return container.State.Pid
+		}
 	}
+	return -1
 }

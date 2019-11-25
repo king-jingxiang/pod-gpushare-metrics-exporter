@@ -1,12 +1,5 @@
-FROM golang:1.11 as build
+FROM ubuntu:16.04
 
-WORKDIR /go/src/pod-gpu-metrics-exporter
-COPY src .
+ADD pod-gpu-metrics-exporter /usr/bin/pod-gpu-metrics-exporter
 
-RUN go install -v pod-gpu-metrics-exporter
-
-FROM debian:stretch-slim
-
-COPY --from=build /go/bin/pod-gpu-metrics-exporter /usr/bin/pod-gpu-metrics-exporter
-
-ENTRYPOINT ["pod-gpu-metrics-exporter", "-logtostderr"]
+ENTRYPOINT ["pod-gpu-metrics-exporter", "-logtostderr", "-v", "8"]

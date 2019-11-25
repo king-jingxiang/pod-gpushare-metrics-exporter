@@ -1,0 +1,12 @@
+FROM golang:1.13 as build
+
+WORKDIR /go/src/pod-gpu-metrics-exporter
+COPY src .
+
+RUN go install -v pod-gpu-metrics-exporter
+
+FROM ubuntu:16.04
+
+COPY --from=build /go/bin/pod-gpu-metrics-exporter /usr/bin/pod-gpu-metrics-exporter
+
+ENTRYPOINT ["pod-gpu-metrics-exporter", "-logtostderr", "-v", "8"]

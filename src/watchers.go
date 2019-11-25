@@ -18,6 +18,7 @@ const (
 	gpuMetrics        = gpuMetricsPath + "dcgm.prom"
 	gpuPodMetricsPath = "/run/dcgm/"
 	gpuPodMetrics     = gpuPodMetricsPath + "dcgm-pod.prom"
+	gpuProcessMetrics = gpuPodMetricsPath + "dcgm-process.prom"
 )
 
 func watchAndWriteGPUmetrics() {
@@ -39,11 +40,17 @@ func watchAndWriteGPUmetrics() {
 			if event.Name == gpuMetrics && event.Op&fsnotify.Create == fsnotify.Create {
 				glog.V(1).Infof("inotify: %s created, now adding device pod information.", gpuMetrics)
 				podMap, err := getDevicePodInfo(socketPath)
+				processMap, err := getProcessPodInfo(socketPath)
 				if err != nil {
 					glog.Error(err)
 					return
 				}
 				err = addPodInfoToMetrics(gpuPodMetricsPath, gpuMetrics, gpuPodMetrics, podMap)
+				if err != nil {
+					glog.Error(err)
+					return
+				}
+				err = addProcessInfoToMetrics(gpuPodMetricsPath, gpuMetrics, gpuProcessMetrics, processMap)
 				if err != nil {
 					glog.Error(err)
 					return
