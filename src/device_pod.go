@@ -50,9 +50,6 @@ func createDevicePodMap(devicePods podresourcesapi.ListPodResourcesResponse) map
 	return deviceToPodMap
 }
 
-// todo add createProcessContainerMap
-// todo add createContainerPodMap
-// todo 最终目的 add createProcessPodMap
 type processPodInfo struct {
 	id            int
 	uuid          string
@@ -201,7 +198,6 @@ func addPodInfoToMetrics(dir string, srcFile string, destFile string, deviceToPo
 	}
 }
 
-// todo 输出到process文件
 func addProcessInfoToMetrics(dir string, destFile string, processToPodMap map[string]processPodInfo) error {
 
 	tmpPrefix := "process"
