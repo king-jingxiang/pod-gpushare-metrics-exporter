@@ -71,15 +71,17 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 			for _, device := range container.GetDevices() {
 				if device.GetResourceName() == nvidiaResourceName {
 					for _, uuid := range device.GetDeviceIds() {
-						id := getGPUIdByUUID(uuid)
+						// todo for gpushare get ture uuid
+						trueUUID := strings.Split(uuid, "_")[0]
+						id := getGPUIdByUUID(trueUUID)
 						d, _ := nvml.NewDeviceLite(id)
-						if d.UUID == uuid {
+						if d.UUID == trueUUID {
 							infos, _ := d.GetAllRunningProcesses()
 							for _, v := range infos {
 								if checkProcessParent(fmt.Sprintf("k8s_%s_%s_%s", container.Name, pod.Name, pod.Namespace), v.PID) {
 									podInfo := processPodInfo{
 										id:            int(id),
-										uuid:          uuid,
+										uuid:          trueUUID,
 										name:          pod.GetName(),
 										namespace:     pod.GetNamespace(),
 										container:     container.GetName(),
@@ -88,7 +90,7 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 										processType:   v.Type.String(),
 										processMemory: v.MemoryUsed,
 									}
-									processToPodMap[fmt.Sprintf("%s-%s-%s", id, uuid, v.PID)] = podInfo
+									processToPodMap[fmt.Sprintf("%s-%s-%s", id, trueUUID, v.PID)] = podInfo
 								}
 							}
 						}

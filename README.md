@@ -88,3 +88,11 @@ use nvml                    # used to get the gpu process used memory
 dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="617",process_type="C"} 847
 dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="16187",process_type="C"} 587
 ```
+
+### Related Project
+[cuda-wrapper](https://github.com/ruanxingbaozi/cuda-wrapper)
+[k8s-device-plugin](https://github.com/yzs981130/k8s-device-plugin)
+
+### Optional Project
+[gpushare-device-plugin](https://github.com/AliyunContainerService/gpushare-device-plugin)
+[gpushare-scheduler-extender](https://github.com/AliyunContainerService/gpushare-scheduler-extender)
