@@ -91,7 +91,7 @@ dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",po
 
 ### Related Project
 [cuda-wrapper](https://github.com/ruanxingbaozi/cuda-wrapper)
-[k8s-device-plugin](https://github.com/yzs981130/k8s-device-plugin)
+[k8s-device-plugin](https://github.com/ruanxingbaozi/k8s-device-plugin)
 
 ### Optional Project
 [gpushare-device-plugin](https://github.com/AliyunContainerService/gpushare-device-plugin)
