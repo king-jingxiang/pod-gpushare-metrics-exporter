@@ -38,7 +38,7 @@ func watchAndWriteGPUmetrics() {
 		select {
 		case event := <-watcher.Events:
 			if event.Name == gpuMetrics && event.Op&fsnotify.Create == fsnotify.Create {
-				glog.V(1).Infof("inotify: %s created, now adding device pod information.", gpuMetrics)
+				//glog.V(1).Infof("inotify: %s created, now adding device pod information.", gpuMetrics)
 				podMap, err := getDevicePodInfo(socketPath)
 				processMap, err := getProcessPodInfo(socketPath)
 				if err != nil {
