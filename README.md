@@ -74,3 +74,17 @@ $ git clone
 $ cd src && go build
 $ sudo ./src
 ```
+### For GPUShare
+#### Add gpu process memory used metrics
+```
+add /var/run/docker.sock    # used to get pod container pid
+add hostPID: true           # used to check whether the parent porcess of the gpu process is pod container process 
+use nvml                    # used to get the gpu process used memory
+```
+#### metrice sample output
+```
+# TYPE dcgm_process_mem_used gauge
+# HELP dcgm_process_mem_used process memory used (in MiB).
+dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="617",process_type="C"} 847
+dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="16187",process_type="C"} 587
+```

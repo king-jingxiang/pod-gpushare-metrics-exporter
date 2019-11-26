@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-cd ${GOPATH}/src/github.com/ruanxingbaozi/pod-gpu-metrics-exporter/src
+ROOT_PATH=$(pwd)
+
+cd ${ROOT_PATH}/src
 go build -o pod-gpu-metrics-exporter -v github.com/ruanxingbaozi/pod-gpu-metrics-exporter/src
 
-cd ${GOPATH}/src/github.com/ruanxingbaozi/pod-gpu-metrics-exporter
-sudo docker build -t pcl/pod-gpu-metrics-exporter:v1.0.0-alpha .
+cd ${ROOT_PATH}
+sudo docker build -t ruanxingbaozi/pod-gpu-metrics-exporter:v1.0.0-alpha .
 
 kubectl apply -f pod-gpu-metrics-exporter-daemonset.yaml
 
@@ -15,3 +17,4 @@ kubectl get po -nkube-system | grep pod-gpu-metrics-exporter | awk '{print $1}' 
 
 
 # kubectl exec -it $(kubectl get po -nkube-system | grep pod-gpu-metrics-exporter | awk '{print $1}') -nkube-system -c pod-nvidia-gpu-metrics-exporter bash
+# kubectl exec -it $(kubectl get po -nkube-system | grep pod-gpu-metrics-exporter | awk '{print $1}') -nkube-system -c nvidia-dcgm-exporter bash

@@ -103,6 +103,12 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 // 通过检查进程container process是否是gpuprocess的父进程判断是否是容器内进程
 func checkProcessParent(containerName string, gPid uint) bool {
 	cPid := grepContainerPid(containerName)
+	cProcess, err := ps.FindProcess(cPid)
+	if err != nil {
+		glog.V(4).Infof("find container process error %v", err)
+		return false
+	}
+	cInitPid := cProcess.PPid()
 	gProcess, err := ps.FindProcess(int(gPid))
 	if err != nil {
 		glog.V(4).Infof("find process error %v", err)
@@ -113,11 +119,11 @@ func checkProcessParent(containerName string, gPid uint) bool {
 			glog.Errorf("find parent process filed: %v", err)
 			return false
 		}
-		if pprocess.Pid() < 1000 {
+		if pprocess.Pid() <= 1 {
 			glog.Errorf("gpu process [%v] not found docker container parent process ", gPid)
 			return false
-		} else if pprocess.Pid() == cPid {
-			glog.V(4).Infof("gpu process [%v] found docker container parent process [%v] ", gPid, cPid)
+		} else if pprocess.Pid() == cInitPid {
+			glog.V(4).Infof("gpu process [%v] found docker container parent process [%v] ", gPid, cInitPid)
 			return true
 		}
 		gProcess = pprocess
@@ -211,13 +217,14 @@ func addProcessInfoToMetrics(dir string, destFile string, processToPodMap map[st
 		os.Remove(tmpFname)
 	}()
 	_, err = tmpF.WriteString("# TYPE dcgm_process_mem_used gauge\n")
+	_, err = tmpF.WriteString("# HELP dcgm_process_mem_used process memory used (in MiB).\n")
 	if err != nil {
 		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
 	}
 	//# TYPE dcgm_process_mem_used gauge
 	//dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="4000",process_type="computer"} 1024
 	for _, pod := range processToPodMap {
-		line := fmt.Sprintf("dcgm_process_mem_used{gpu=\"%v\",uuid=\"%s\",pod_name=\"%s\",pod_namespace=\"%s\",container_name=\"%s\",process_name=\"%s\",process_pid=\"%v\",process_type=\"%s\"}%v\n",
+		line := fmt.Sprintf("dcgm_process_mem_used{gpu=\"%v\",uuid=\"%s\",pod_name=\"%s\",pod_namespace=\"%s\",container_name=\"%s\",process_name=\"%s\",process_pid=\"%v\",process_type=\"%s\"} %v\n",
 			pod.id, pod.uuid, pod.name, pod.namespace, pod.container, pod.processName, pod.processPid, pod.processType, pod.processMemory)
 		_, err = tmpF.WriteString(line)
 		if err != nil {

@@ -49,4 +49,11 @@ func getGPUmetrics(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	resp.Write(metrics)
+	process_metrics, err := ioutil.ReadFile(gpuProcessMetrics)
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		glog.Errorf("error responding to %v%v: %v", req.Host, req.URL, err.Error())
+		return
+	}
+	resp.Write(process_metrics)
 }

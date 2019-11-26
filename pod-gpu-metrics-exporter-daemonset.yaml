@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
 #      - image: nvidia/podpod-gpu-metrics-exporter:v1.0.0-alpha
-      - image: pcl/pod-gpu-metrics-exporter:v1.0.0-alpha
+      - image: ruanxingbaozi/pod-gpu-metrics-exporter:v1.0.0-alpha
         name: pod-nvidia-gpu-metrics-exporter
         ports:
         - name: gpu-metrics
