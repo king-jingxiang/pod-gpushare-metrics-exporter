@@ -106,7 +106,8 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 // GetTrueID takes device name in k8s and return the true DeviceID in node
 func GetTrueID(vid string) string {
 	if vid[len(vid)-2:len(vid)-1] != "-" {
-		glog.Fatal("error pattern in GetTrueId: ", vid)
+		glog.Infof("error pattern in GetTrueId: ", vid)
+		return vid
 	}
 	return vid[:len(vid)-2]
 }
