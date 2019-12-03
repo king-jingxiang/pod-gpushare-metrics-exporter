@@ -72,7 +72,8 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 				if device.GetResourceName() == nvidiaResourceName {
 					for _, uuid := range device.GetDeviceIds() {
 						// todo for gpushare get ture uuid
-						trueUUID := strings.Split(uuid, "_")[0]
+						//trueUUID := strings.Split(uuid, "_")[0]
+						trueUUID := GetTrueID(uuid)
 						id := getGPUIdByUUID(trueUUID)
 						d, _ := nvml.NewDeviceLite(id)
 						if d.UUID == trueUUID {
@@ -100,6 +101,14 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 		}
 	}
 	return processToPodMap
+}
+
+// GetTrueID takes device name in k8s and return the true DeviceID in node
+func GetTrueID(vid string) string {
+	if vid[len(vid)-2:len(vid)-1] != "-" {
+		glog.Fatal("error pattern in GetTrueId: ", vid)
+	}
+	return vid[:len(vid)-2]
 }
 
 // 通过检查进程container process是否是gpuprocess的父进程判断是否是容器内进程

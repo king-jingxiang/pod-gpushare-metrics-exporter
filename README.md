@@ -71,7 +71,7 @@ dcgm_memory_clock{container_name="pod1-ctr",gpu="1",pod_name="pod1",pod_namespac
 #### Build and Run locally
 ```sh
 $ git clone
-$ cd src && go build
+$ cd src && go build。
 $ sudo ./src
 ```
 ### For GPUShare
