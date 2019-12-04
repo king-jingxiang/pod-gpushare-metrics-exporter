@@ -65,14 +65,11 @@ type processPodInfo struct {
 // Helper function that creates a map of pod info for each process
 func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) map[string]processPodInfo {
 	processToPodMap := make(map[string]processPodInfo)
-
 	for _, pod := range devicePods.GetPodResources() {
 		for _, container := range pod.GetContainers() {
 			for _, device := range container.GetDevices() {
 				if device.GetResourceName() == nvidiaResourceName {
 					for _, uuid := range device.GetDeviceIds() {
-						// todo for gpushare get ture uuid
-						//trueUUID := strings.Split(uuid, "_")[0]
 						trueUUID := GetTrueID(uuid)
 						id := getGPUIdByUUID(trueUUID)
 						d, _ := nvml.NewDeviceLite(id)
@@ -103,10 +100,55 @@ func createProcessPodMap(devicePods podresourcesapi.ListPodResourcesResponse) ma
 	return processToPodMap
 }
 
+type gpuUsedInfo struct {
+	hostname string
+	id       uint
+	uuid     string
+	used     uint
+}
+
+// 获取gpu卡占用情况
+func getGpuBasicInfo(devicePods podresourcesapi.ListPodResourcesResponse) map[string]gpuUsedInfo {
+	// 逻辑分配
+	gpuLogicUsedMap := make(map[string]gpuUsedInfo)
+	// 物理占用
+	//gpuPhysicalUsedMap := make(map[string]gpuUsedInfo)
+	// todo 容器内hostname获取不准确
+	hostname, _ := os.Hostname()
+	//hostname := os.Getenv("MACHINE_HOSTNAME")
+
+	for uuid, id := range gpuUUID {
+		info := gpuUsedInfo{
+			hostname: hostname,
+			id:       id,
+			uuid:     uuid,
+			used:     0,
+		}
+		gpuLogicUsedMap[uuid] = info
+	}
+	for _, pod := range devicePods.GetPodResources() {
+		for _, container := range pod.GetContainers() {
+			for _, device := range container.GetDevices() {
+				if device.GetResourceName() == nvidiaResourceName {
+					for _, uuid := range device.GetDeviceIds() {
+						trueUUID := GetTrueID(uuid)
+						if ginfo, found := gpuLogicUsedMap[trueUUID]; found {
+							ginfo.used = 1
+							gpuLogicUsedMap[trueUUID] = ginfo
+						}
+					}
+				}
+			}
+		}
+	}
+	return gpuLogicUsedMap
+}
+
 // GetTrueID takes device name in k8s and return the true DeviceID in node
 func GetTrueID(vid string) string {
+	// todo for gpushare get ture uuid
+	//trueUUID := strings.Split(uuid, "_")[0]
 	if vid[len(vid)-2:len(vid)-1] != "-" {
-		glog.Infof("error pattern in GetTrueId: ", vid)
 		return vid
 	}
 	return vid[:len(vid)-2]
@@ -169,6 +211,14 @@ func getProcessPodInfo(socket string) (map[string]processPodInfo, error) {
 		return nil, fmt.Errorf("failed to get devices Pod information: %v", err)
 	}
 	return createProcessPodMap(*devicePods), nil
+}
+
+func getGpuUsedInfo(socket string) (map[string]gpuUsedInfo, error) {
+	devicePods, err := getListOfPods(socket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get devices Pod information: %v", err)
+	}
+	return getGpuBasicInfo(*devicePods), nil
 }
 
 func addPodInfoToMetrics(dir string, srcFile string, destFile string, deviceToPodMap map[string]devicePodInfo) error {
@@ -238,6 +288,34 @@ func addProcessInfoToMetrics(dir string, destFile string, processToPodMap map[st
 	for _, pod := range processToPodMap {
 		line := fmt.Sprintf("dcgm_process_mem_used{gpu=\"%v\",uuid=\"%s\",pod_name=\"%s\",pod_namespace=\"%s\",container_name=\"%s\",process_name=\"%s\",process_pid=\"%v\",process_type=\"%s\"} %v\n",
 			pod.id, pod.uuid, pod.name, pod.namespace, pod.container, pod.processName, pod.processPid, pod.processType, pod.processMemory)
+		_, err = tmpF.WriteString(line)
+		if err != nil {
+			return fmt.Errorf("error writing to %s: %v", tmpFname, err)
+		}
+	}
+	return writeDestFile(tmpFname, destFile)
+}
+func addGpuInfoInfoToMetrics(dir string, destFile string, gpuUsedMap map[string]gpuUsedInfo) error {
+
+	tmpPrefix := "basic"
+	tmpF, err := ioutil.TempFile(dir, tmpPrefix)
+	if err != nil {
+		return fmt.Errorf("error creating temp file: %v", err)
+	}
+	tmpFname := tmpF.Name()
+	defer func() {
+		tmpF.Close()
+		os.Remove(tmpFname)
+	}()
+	_, err = tmpF.WriteString("# TYPE dcgm_gpu_logic_used gauge\n")
+	_, err = tmpF.WriteString("# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).\n")
+	if err != nil {
+		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
+	}
+	//# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).
+	//dcgm_gpu_logic_used{hostname="pod-gpu-metrics-exporter-pdvx9",gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937"} 1
+	for _, gpu := range gpuUsedMap {
+		line := fmt.Sprintf("dcgm_gpu_logic_used{hostname=\"%s\",gpu=\"%v\",uuid=\"%s\"} %v\n", gpu.hostname, gpu.id, gpu.uuid, gpu.used)
 		_, err = tmpF.WriteString(line)
 		if err != nil {
 			return fmt.Errorf("error writing to %s: %v", tmpFname, err)

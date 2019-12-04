@@ -19,6 +19,7 @@ const (
 	gpuPodMetricsPath = "/run/dcgm/"
 	gpuPodMetrics     = gpuPodMetricsPath + "dcgm-pod.prom"
 	gpuProcessMetrics = gpuPodMetricsPath + "dcgm-process.prom"
+	gpuBasicMetrics = gpuPodMetricsPath + "dcgm-basic.prom"
 )
 
 func watchAndWriteGPUmetrics() {
@@ -41,6 +42,7 @@ func watchAndWriteGPUmetrics() {
 				//glog.V(1).Infof("inotify: %s created, now adding device pod information.", gpuMetrics)
 				podMap, err := getDevicePodInfo(socketPath)
 				processMap, err := getProcessPodInfo(socketPath)
+				gpuUsedMap, err := getGpuUsedInfo(socketPath)
 				if err != nil {
 					glog.Error(err)
 					return
@@ -51,6 +53,11 @@ func watchAndWriteGPUmetrics() {
 					return
 				}
 				err = addProcessInfoToMetrics(gpuPodMetricsPath, gpuProcessMetrics, processMap)
+				if err != nil {
+					glog.Error(err)
+					return
+				}
+				err = addGpuInfoInfoToMetrics(gpuPodMetricsPath, gpuBasicMetrics, gpuUsedMap)
 				if err != nil {
 					glog.Error(err)
 					return
