@@ -113,16 +113,12 @@ func getGpuBasicInfo(devicePods podresourcesapi.ListPodResourcesResponse) map[st
 	gpuLogicUsedMap := make(map[string]gpuUsedInfo)
 	// 物理占用
 	//gpuPhysicalUsedMap := make(map[string]gpuUsedInfo)
-	// todo 容器内hostname获取不准确
-	hostname, _ := os.Hostname()
-	//hostname := os.Getenv("MACHINE_HOSTNAME")
 
 	for uuid, id := range gpuUUID {
 		info := gpuUsedInfo{
-			hostname: hostname,
-			id:       id,
-			uuid:     uuid,
-			used:     0,
+			id:   id,
+			uuid: uuid,
+			used: 0,
 		}
 		gpuLogicUsedMap[uuid] = info
 	}
@@ -312,14 +308,38 @@ func addGpuInfoInfoToMetrics(dir string, destFile string, gpuUsedMap map[string]
 	if err != nil {
 		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
 	}
-	//# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).
-	//dcgm_gpu_logic_used{hostname="pod-gpu-metrics-exporter-pdvx9",gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937"} 1
+	// TODO hostname 获取不准确
+	hostname, _ := os.Hostname()
+	//hostname := os.Getenv("MACHINE_HOSTNAME")
+	var logicUsed [32]int
 	for _, gpu := range gpuUsedMap {
-		line := fmt.Sprintf("dcgm_gpu_logic_used{hostname=\"%s\",gpu=\"%v\",uuid=\"%s\"} %v\n", gpu.hostname, gpu.id, gpu.uuid, gpu.used)
-		_, err = tmpF.WriteString(line)
-		if err != nil {
-			return fmt.Errorf("error writing to %s: %v", tmpFname, err)
+		if gpu.used == 1 {
+			logicUsed[int(gpu.id)] = 1
 		}
 	}
+	logicUsedStr := strings.Trim(fmt.Sprint(logicUsed[:len(gpuUsedMap)]), "[]")
+	//# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).
+	//dcgm_gpu_logic_used{hostname="pod-gpu-metrics-exporter-mvqs8",count="1",used="1"} 1
+	line := fmt.Sprintf("dcgm_gpu_logic_used{hostname=\"%s\",count=\"%v\",used=\"%s\"} %v\n", hostname, len(gpuUsedMap), logicUsedStr, calcDec(logicUsed[:len(gpuUsedMap)]))
+	_, err = tmpF.WriteString(line)
+	if err != nil {
+		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
+	}
 	return writeDestFile(tmpFname, destFile)
+}
+
+func calcDec(data []int) int {
+	value := 0
+	len := len(data) - 1
+	for i, v := range data {
+		value += pow2(len-i) * v
+	}
+	return value
+}
+func pow2(n int) int {
+	value := 1
+	for i := 0; i < n; i++ {
+		value *= 2
+	}
+	return value
 }

@@ -1,0 +1,168 @@
+{
+  "type": "table",
+  "title": "GpuUsed",
+  "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 8
+  },
+  "id": 2,
+  "targets": [
+    {
+      "refId": "A",
+      "expr": "dcgm_gpu_logic_used",
+      "intervalFactor": 1,
+      "format": "table",
+      "instant": true
+    }
+  ],
+  "timeFrom": null,
+  "timeShift": null,
+  "options": {},
+  "styles": [
+    {
+      "type": "hidden",
+      "pattern": "Time",
+      "alias": "Time",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss"
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "__name__",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "app",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "instance",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "job",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "kubernetes_name",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "hidden",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "kubernetes_namespace",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "number",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "thresholds": [],
+      "mappingType": 1
+    },
+    {
+      "unit": "short",
+      "type": "string",
+      "alias": "",
+      "decimals": 2,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "colorMode": null,
+      "pattern": "/.*/",
+      "thresholds": []
+    }
+  ],
+  "transform": "table",
+  "pageSize": null,
+  "showHeader": true,
+  "columns": [],
+  "scroll": true,
+  "fontSize": "100%",
+  "sort": {
+    "col": 0,
+    "desc": true
+  },
+  "links": []
+}
