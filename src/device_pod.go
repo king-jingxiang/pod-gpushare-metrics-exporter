@@ -19,7 +19,7 @@ import (
 const nvidiaResourceName = "nvidia.com/gpu"
 
 // 存储map[uuid]index
-var gpuUUID = make(map[string]uint)
+var gpuUUIDMap = make(map[string]uint)
 
 type devicePodInfo struct {
 	name      string
@@ -113,8 +113,10 @@ func getGpuBasicInfo(devicePods podresourcesapi.ListPodResourcesResponse) map[st
 	gpuLogicUsedMap := make(map[string]gpuUsedInfo)
 	// 物理占用
 	//gpuPhysicalUsedMap := make(map[string]gpuUsedInfo)
-
-	for uuid, id := range gpuUUID {
+	if len(gpuUUIDMap) <= 0 {
+		initUUIDMap()
+	}
+	for uuid, id := range gpuUUIDMap {
 		info := gpuUsedInfo{
 			id:   id,
 			uuid: uuid,
@@ -180,16 +182,20 @@ func checkProcessParent(containerName string, gPid uint) bool {
 	}
 }
 
+func initUUIDMap() {
+	n, _ := nvml.GetDeviceCount()
+	for i := uint(0); i < n; i++ {
+		d, _ := nvml.NewDeviceLite(i)
+		gpuUUIDMap[d.UUID] = i
+	}
+}
+
 // return uuid index
 func getGPUIdByUUID(uuid string) uint {
-	if _, found := gpuUUID[uuid]; !found {
-		n, _ := nvml.GetDeviceCount()
-		for i := uint(0); i < n; i++ {
-			d, _ := nvml.NewDeviceLite(i)
-			gpuUUID[d.UUID] = i
-		}
+	if _, found := gpuUUIDMap[uuid]; !found {
+		initUUIDMap()
 	}
-	return gpuUUID[uuid]
+	return gpuUUIDMap[uuid]
 }
 
 func getDevicePodInfo(socket string) (map[string]devicePodInfo, error) {
@@ -308,9 +314,8 @@ func addGpuInfoInfoToMetrics(dir string, destFile string, gpuUsedMap map[string]
 	if err != nil {
 		return fmt.Errorf("error writing to %s: %v", tmpFname, err)
 	}
-	// TODO hostname 获取不准确
-	hostname, _ := os.Hostname()
-	//hostname := os.Getenv("MACHINE_HOSTNAME")
+	// hostname 通过docker info获取
+	hostname := getMachineHostname()
 	var logicUsed [32]int
 	for _, gpu := range gpuUsedMap {
 		if gpu.used == 1 {

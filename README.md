@@ -87,6 +87,16 @@ use nvml                    # used to get the gpu process used memory
 # HELP dcgm_process_mem_used process memory used (in MiB).
 dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="617",process_type="C"} 847
 dcgm_process_mem_used{gpu="0",uuid="GPU-ad365448-e6c2-68f2-24e4-517b1e56e937",pod_name="test-pod-01",pod_namespace="default",container_name="nvidia-test",process_name="python",process_pid="16187",process_type="C"} 587
+# TYPE dcgm_gpu_logic_used gauge
+# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).
+dcgm_gpu_logic_used{hostname="amax-pcl1",count="1",used="1"} 1
+dcgm_gpu_logic_used{hostname="amax-pcl2",count="4",used="1 1 0 0"} 12
+```
+
+### deploy
+```bash
+kubectl apply -f ./prometheus
+kubectl apply -f ./grafana
 ```
 
 ### Related Project

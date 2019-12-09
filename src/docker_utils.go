@@ -10,11 +10,10 @@ import (
 
 const dockerSock = "unix:///var/run/docker.sock"
 
-
 // errorCode: 0: not running -1: unknown error
 func getContainerPid(containerName string) int {
 	glog.V(4).Infof("get container [%s] pid ", containerName)
-	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock))
+	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock), client.WithAPIVersionNegotiation())
 	if err == nil {
 		container, err := cli.ContainerInspect(context.Background(), containerName)
 		if err == nil {
@@ -29,7 +28,7 @@ func getContainerPid(containerName string) int {
 }
 
 func grepContainerPid(containerName string) int {
-	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock))
+	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock), client.WithAPIVersionNegotiation())
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		panic(err)
@@ -43,4 +42,15 @@ func grepContainerPid(containerName string) int {
 		}
 	}
 	return -1
+}
+
+func getMachineHostname() string {
+	cli, err := client.NewClientWithOpts(client.WithHost(dockerSock), client.WithAPIVersionNegotiation())
+	info, err := cli.Info(context.Background())
+	if err != nil {
+		panic(err)
+		return ""
+	}
+
+	return info.Name
 }
