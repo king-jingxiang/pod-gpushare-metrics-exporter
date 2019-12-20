@@ -147,6 +147,7 @@ func GetTrueID(vid string) string {
 	// todo for gpushare get ture uuid
 	//trueUUID := strings.Split(uuid, "_")[0]
 	if vid[len(vid)-2:len(vid)-1] != "-" {
+		glog.V(4).Infof("vid [%v] not found true id,use vid",vid)
 		return vid
 	}
 	return vid[:len(vid)-2]
@@ -324,7 +325,7 @@ func addGpuInfoInfoToMetrics(dir string, destFile string, gpuUsedMap map[string]
 	}
 	logicUsedStr := strings.Trim(fmt.Sprint(logicUsed[:len(gpuUsedMap)]), "[]")
 	//# HELP dcgm_gpu_logic_used gpu used (in 0(unused)/1(used) ).
-	//dcgm_gpu_logic_used{hostname="pod-gpu-metrics-exporter-mvqs8",count="1",used="1"} 1
+	//dcgm_gpu_logic_used{hostname="amax",count="1",used="1"} 1
 	line := fmt.Sprintf("dcgm_gpu_logic_used{hostname=\"%s\",count=\"%v\",used=\"%s\"} %v\n", hostname, len(gpuUsedMap), logicUsedStr, calcDec(logicUsed[:len(gpuUsedMap)]))
 	_, err = tmpF.WriteString(line)
 	if err != nil {
